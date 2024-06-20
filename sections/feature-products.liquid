@@ -1,0 +1,246 @@
+{{ 'feature__products.css' | asset_url | stylesheet_tag }}
+
+<div class="feature__products">
+  <div class="page-width">
+    {% if section.settings.title != blank %}
+      <h2 class="feature__products-title">{{ section.settings.title }}</h2>
+    {% endif %}
+    <div class="feature__products-col">
+      {% for block in section.blocks %}
+        {% assign product = block.settings.feature_product %}
+        {% assign product_index = forloop.index %}
+
+        <div class="feature__product">
+          {% if product.featured_image != blank %}
+            <img
+              src="{{ product.featured_image | image_url}}"
+              alt="{{ product.featured_image.alt }}"
+              width="100%"
+              height="100%"
+            >
+          {% endif %}
+
+          <div class="feature__product-popup hidden">
+            <div class="feature__product-popup-cross">
+              <button>
+                {% render 'cross' %}
+              </button>
+            </div>
+            <div class="feature__product-popup-iwt">
+              {% if product.featured_image != blank %}
+                <div class="feature__product-popup-image">
+                  <img
+                    src="{{- product.featured_image | image_url}}"
+                    alt="{{ product.featured_image.alt }}"
+                    width="100%"
+                    height="100%"
+                    loading="lazy"
+                  >
+                </div>
+              {% endif %}
+
+              <div class="feature__product-popup-text">
+                {% if product.title != blank %}
+                  <h2>{{- product.title -}}</h2>
+                {% endif %}
+
+                <span class="feature__product-price">
+                  {{- product.selected_or_first_available_variant.price | money -}}
+                </span>
+
+                {% if product.description != blank %}
+                  <div class="feature__product-popup-desc">
+                    {{- product.description -}}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <form id="popup-form-{{ product_index }}" class="popup-form-atc" method="post" action="/cart/add">
+              {% if product.variants.size > 1 %}
+                <div class="product-options">
+                  {% for option in product.options_with_values %}
+                    {% if option.name == 'Color' %}
+                      <fieldset class="product__legend-fieldset">
+                        <legend>{{ option.name }}</legend>
+                        <div class="product__radios-wrapper">
+                          {% for value in option.values %}
+                            {% assign option_pos = 'option' | append: option.position %}
+                            {% assign variant = product.variants | where: option_pos, value | first %}
+                            <div
+                              class="product__radio"
+                              style="color:{{ variant.metafields.custom.custom_color | default:value}};"
+                            >
+                              <input
+                                type="radio"
+                                id="{{ option.name | handleize }}-{{ value | handleize }}-{{ product_index }}"
+                                name="{{ option.name }}"
+                                value="{{ value }}"
+                                {% if option.selected_value == true %}
+                                  checked
+                                {% endif %}
+                                data-option-name="{{ option.name }}"
+                                data-option-value="{{ value }}"
+                              >
+                              <label for="{{ option.name | handleize }}-{{ value | handleize }}-{{ product_index }}">
+                                {{- value -}}
+                              </label>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </fieldset>
+                    {% else %}
+                      <fieldset class="product__legend-fieldset">
+                        <legend>{{ option.name }}</legend>
+                        <div class="product__radios-wrapper">
+                          <select
+                            id="{{ option.name | handleize }}-{{ product_index }}"
+                            name="{{ option.name }}"
+                            data-option-name="{{ option.name }}"
+                          >
+                            {% for value in option.values %}
+                              <option
+                                {% if value == option.selected_value %}
+                                  selected
+                                {% endif %}
+                                value="{{ value }}"
+                                data-option-value="{{ value }}"
+                              >
+                                {{ value }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </fieldset>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <input type="hidden" id="variant-id-{{ product_index }}" name="id" value="">
+
+              <button class="add-to-cart-button" type="submit">
+                <span>{{ 'products.product.add_to_cart' | t }}</span>
+                {% render 'chevron-right', currentColor: 'white' %}
+              </button>
+              <script type="application/json" id="product-variants-json-{{ product_index }}">
+                {{ product.variants | json }}
+              </script>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="feature__product-popup-overflow"></div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const forms = document.querySelectorAll('[id^="popup-form-"]');
+    forms.forEach(function (form) {
+      const formId = form.getAttribute('id').split('-').pop();
+      console.log(formId);
+      const variantIdInput = form.querySelector(`#variant-id-${formId}`);
+      const currentPrice = form.closest('.feature__product-popup').querySelector('.feature__product-price');
+      const productVariantsElement = document.getElementById(`product-variants-json-${formId}`);
+      let productVariants;
+
+      try {
+        productVariants = JSON.parse(productVariantsElement.textContent);
+      } catch (e) {
+        console.error('Error parsing product variants:', e);
+        return;
+      }
+
+      function getSelectedOptions() {
+        const selectedOptions = {};
+        const options = form.querySelectorAll('input[type="radio"]:checked, select');
+        options.forEach((option) => {
+          selectedOptions[option.getAttribute('data-option-name')] = option.value;
+        });
+        console.log('Selected options:', selectedOptions);
+        return selectedOptions;
+      }
+
+      let price;
+
+      function findVariantId(selectedOptions) {
+        for (let i = 0; i < productVariants.length; i++) {
+          const variant = productVariants[i];
+          let match = true;
+          for (const option in selectedOptions) {
+            if (!variant.options.includes(selectedOptions[option])) {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            price = variant.price;
+            return variant.id;
+          }
+        }
+        return null;
+      }
+
+      function updateVariantId() {
+        const selectedOptions = getSelectedOptions();
+        const variantId = findVariantId(selectedOptions);
+
+        if (price !== undefined) {
+          currentPrice.textContent = formatMoney(price, '{{ shop.money_format }}');
+        }
+
+        if (variantId) {
+          variantIdInput.value = variantId;
+          console.log('Updated variant ID:', variantId);
+        } else {
+          console.warn('No matching variant ID found for selected options.');
+        }
+      }
+
+      form.addEventListener('change', function (event) {
+        if (event.target.type === 'radio' || event.target.tagName === 'SELECT') {
+          updateVariantId();
+        }
+      });
+
+      // Initial update on page load
+      updateVariantId();
+    });
+  });
+</script>
+
+<script src="{{ 'custom-atc.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Feature_Products",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "Product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "feature_product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Feature Products"
+    }
+  ]
+}
+{% endschema %}

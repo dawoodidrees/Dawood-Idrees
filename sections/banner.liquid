@@ -1,0 +1,108 @@
+{{ 'banner.css' | asset_url | stylesheet_tag }}
+
+<div class="banner__image" {{ section.settings.align_content }}>
+  <div class="banner__image-content">
+    {% if section.settings.title != blank %}
+      <h2 class="banner__image-title">{{ section.settings.title }}</h2>
+    {% endif %}
+    {% if section.settings.desc != blank %}
+      <div class="banner__image-desc">{{ section.settings.desc }}</div>
+    {% endif %}
+    {% if section.settings.button_link != blank and section.settings.button_label != blank %}
+      <div class="banner__image-cta">
+        <a href="{{ section.settings.button_link }}">
+          <span>{{ section.settings.button_label }}</span>
+          {% render 'chevron-right', currentColor: 'white' %}
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if section.settings.background_image != blank %}
+    <div class="banner__background">
+      <img
+        src="{{ section.settings.background_image | image_url }}"
+        alt="{{ section.settings.background_image.alt }}"
+        width="100%"
+        height="100%"
+        loading="eager"
+      >
+    </div>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Banner-Image",
+  "settings": [
+    {
+      "type": "select",
+      "id": "align_content",
+      "label": "Content Position",
+      "options": [
+        {
+          "value": "top_left",
+          "label": "Top Left"
+        },
+        {
+          "value": "top_center",
+          "label": "Top Center"
+        },
+        {
+          "value": "top_right",
+          "label": "Top Right"
+        },
+        {
+          "value": "middle_center",
+          "label": "Middle Center"
+        },
+        {
+          "value": "bottom_left",
+          "label": "Bottom Left"
+        },
+        {
+          "value": "bottom_center",
+          "label": "Bottom Center"
+        },
+        {
+          "value": "bottom_right",
+          "label": "Bottom right"
+        }
+      ],
+      "default": "bottom_left",
+      "info": "Position the content block"
+    },
+
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title"
+    },
+    {
+      "type": "richtext",
+      "id": "desc",
+      "label": "Description"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button Link"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button Label"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background Image"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Banner Image"
+    }
+  ]
+}
+{% endschema %}

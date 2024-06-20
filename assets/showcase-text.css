@@ -1,0 +1,17 @@
+.showcase__text {
+  position: relative;
+  text-align: center;
+  padding: 1rem;
+  background: #f5f5f5;
+}
+
+.showcase__text-title {
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 767px) {
+  .showcase__text-title {
+    font-size: 1.2rem;
+  }
+}

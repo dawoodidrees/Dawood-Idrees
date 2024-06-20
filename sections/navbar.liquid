@@ -1,0 +1,76 @@
+{{ 'navbar.css' | asset_url | stylesheet_tag }}
+
+<div class="navbar">
+  <div class="page-width">
+    {% if section.settings.logo != blank and shop.name != blank %}
+      <div class="navbar__trigger desktop-hide">
+        {% render 'icon-hamburger' %}
+        {% render 'icon-close' %}
+      </div>
+
+      <div class="navbar__logo">
+        {% if section.settings.logo != blank %}
+          <a href="{{ routes.root_url }}">
+            {{ section.settings.logo | image_url: width: 153, height: 20 | image_tag }}
+          </a>
+        {% elsif shop.name != blank %}
+          <a href="{{ routes.root_url }}">
+            <h2>{{ shop.name }}</h2>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if section.settings.navbar_text != blank %}
+      <div class="navbar__annoucement navbar__mobile-hide">
+        {{ section.settings.navbar_text }}
+      </div>
+    {% endif %}
+
+    {% if section.settings.button_link != blank and section.settings.button_label != blank %}
+      <div class="navbar__cta navbar__mobile-hide">
+        <a href="{{ section.settings.button_link }}">
+          <span>{{ section.settings.button_label }}</span>
+          {% render 'chevron-right', currentColor: 'black' %}
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="{{ 'navbar-trigger.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Navbar",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "text",
+      "id": "navbar_text",
+      "label": "Text",
+      "info": "if text is added it ll be shown if the field is blank the element will not be added"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button Link"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button Label",
+      "default": "Button"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Navbar"
+    }
+  ]
+}
+{% endschema %}
